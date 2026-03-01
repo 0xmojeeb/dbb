@@ -14,18 +14,16 @@ import {
 const ERC721_INTERFACE = "0x80ac58cd";
 const ERC1155_INTERFACE = "0xd9b67a26";
 
-
-
 function getProvider(networkKey) {
   const net = NETWORKS[networkKey];
   if (!net.rpcUrl) {
     throw new Error(`Missing RPC URL for ${net.name}.`);
   }
+  
   return new ethers.JsonRpcProvider(net.rpcUrl);
 }
 
 async function isNFTContract(contractAddress, provider) {
-  
   const iface = new ethers.Interface(["function supportsInterface(bytes4) view returns (bool)"]);
   const contract = new ethers.Contract(contractAddress, iface, provider);
 
@@ -36,7 +34,6 @@ async function isNFTContract(contractAddress, provider) {
     const supports1155 = await contract.supportsInterface(ERC1155_INTERFACE);
     if (supports1155) return true;
   } catch (e) {
-    
     return false;
   }
   return false;
@@ -247,14 +244,3 @@ export async function scrapeFreeMints(blockRange = 500) {
   return allResults;
 }
 
-
-if (
-  typeof process !== "undefined" &&
-  process.argv &&
-  process.argv[1].includes("freeMintScraper")
-) {
-  const blockRange = parseInt(process.argv[2]) || 500;
-  scrapeFreeMints(blockRange).then((results) => {
-    console.log(JSON.stringify(results, null, 2));
-  });
-}

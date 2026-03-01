@@ -8,13 +8,23 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [walletAddress, setWalletAddress] = useState(null);
+  const [accessMessage, setAccessMessage] = useState('');
 
   
   const connectWallet = async () => {
     if (window.ethereum) {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        setWalletAddress(accounts[0]);
+        const address = accounts[0];
+        setWalletAddress(address);
+        
+        
+        const accessCheck = await axios.get(`/api/check-access?address=${address}`);
+        setAccessMessage(accessCheck.data.message);
+        
+        if (!accessCheck.data.granted) {
+            alert(accessCheck.data.message);
+        }
       } catch (err) {
         console.error(err);
       }
@@ -23,14 +33,13 @@ function App() {
     }
   };
 
- 
+  
   const mintNFT = async (nft) => {
     if (!walletAddress) return alert('Please connect your wallet first!');
 
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-
       
       const contract = new ethers.Contract(
         nft.address,
@@ -39,7 +48,6 @@ function App() {
       );
 
       console.log(`Minting ${nft.name}...`);
-      
       
       const tx = await contract[nft.mintFunction.split('(')[0]]({ value: 0 });
       await tx.wait();
@@ -51,20 +59,22 @@ function App() {
     }
   };
 
+  
   const fetchNFTs = async () => {
     try {
-      const response = await axios.get('/api/free-mints');
-      setNfts(response.data);
+      
+      const response = await axios.post('/api/scan'); 
+      setNfts(response.data.data);
       setLoading(false);
     } catch (err) {
-      setError('Failed to fetch NFTs. Ensure backend is running.');
+      setError('Failed to fetch NFTs.');
       setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchNFTs();
-    const interval = setInterval(fetchNFTs, 10000);
+    const interval = setInterval(fetchNFTs, 60000); 
     return () => clearInterval(interval);
   }, []);
 
@@ -79,6 +89,8 @@ function App() {
           {walletAddress ? `Connected: ${walletAddress.slice(0,6)}...` : 'Connect Wallet'}
         </button>
       </header>
+      
+      {accessMessage && <div className="access-banner">{accessMessage}</div>}
 
       {nfts.length === 0 ? (
         <p>No free public mints found at the moment.</p>
@@ -110,4 +122,3 @@ function App() {
 }
 
 export default App;
-
