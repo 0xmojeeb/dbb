@@ -1,11 +1,10 @@
 import { ethers } from "ethers";
 import chalk from "chalk";
-
-
 import { DBB_CONTRACTS, NETWORKS, ALLOWED_WALLETS } from "./api/constants.js";
 import { ERC721_BALANCE_ABI } from "./api/abiFragments.js";
 
 /**
+ * 
  * @param {string} walletAddress 
  * @returns {Object} 
  */
@@ -31,7 +30,7 @@ export async function checkTokenGate(walletAddress) {
     };
   }
 
-  
+ 
   if (!NETWORKS.base.alchemyApiKey) {
     return {
       granted: false,
@@ -132,17 +131,3 @@ export async function checkTokenGate(walletAddress) {
   return result;
 }
 
-
-if (process.argv[1] && process.argv[1].endsWith("tokenGate.js")) {
-    const wallet = process.argv[2];
-  
-    if (!wallet) {
-      console.log(chalk.red("\n❌ Please provide a wallet address:"));
-      console.log(chalk.gray("   node src/tokenGate.js 0xYourWalletAddress\n"));
-      process.exit(1);
-    }
-  
-    checkTokenGate(wallet).then((result) => {
-      process.exit(result.granted ? 0 : 1);
-    });
-}
