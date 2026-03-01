@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { checkTokenGate } from "./tokenGate.js";
 import { scrapeFreeMints } from "./api/freeMintScraper.js";
-import { USER_WALLET } from "./api/constants.js";
+import { ALLOWED_WALLETS } from "./api/constants.js";
 
 async function main() {
   
@@ -14,13 +14,14 @@ async function main() {
     )
   );
 
-  const walletAddress = process.argv[2] || USER_WALLET;
+  
+  const walletAddress = process.argv[2] || ALLOWED_WALLETS[0];
 
   if (!walletAddress) {
-    console.log(chalk.red("❌ No wallet address provided!\n"));
+    console.log(chalk.red("❌ No wallet address provided and no default available!\n"));
     console.log(chalk.white("Usage:"));
     console.log(chalk.gray("  node src/index.js 0xYourWalletAddress"));
-    console.log(chalk.gray("  OR set USER_WALLET_ADDRESS in your .env file\n"));
+    console.log(chalk.gray("  OR set USER_WALLET_ADDRESSES in your .env file\n"));
     process.exit(1);
   }
 
@@ -47,7 +48,7 @@ async function main() {
 
   const freeMints = await scrapeFreeMints(blockRange);
 
-  // ---- Summary ----
+  
   console.log(chalk.bold.magenta("\n" + "═".repeat(60)));
   console.log(chalk.bold.magenta("   📊 SESSION SUMMARY"));
   console.log(chalk.bold.magenta("═".repeat(60)));
@@ -59,7 +60,7 @@ async function main() {
   console.log(chalk.bold.magenta("═".repeat(60) + "\n"));
 }
 
-// ---- Run ----
+
 main().catch((error) => {
   console.error(chalk.red(`\n💀 Fatal error: ${error.message}\n`));
   console.error(chalk.gray(error.stack));
