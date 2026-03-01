@@ -1,5 +1,5 @@
 
-import { checkTokenGate } from "../src/api/tokenGate.js";
+import { checkTokenGate } from "./logic/tokenGate.js";
 export default async function handler(req, res) {
   
   if (req.method !== 'GET') {

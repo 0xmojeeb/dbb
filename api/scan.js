@@ -1,4 +1,4 @@
-import { scrapeFreeMints } from "../src/api/freeMintScraper.js";
+import { scrapeFreeMints } from "./logic/freeMintScraper.js";
 export default async function handler(req, res) {
   
   if (req.method !== 'POST') {
