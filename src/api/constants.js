@@ -1,16 +1,17 @@
-
+// src/api/constants.js
 
 export const DBB_CONTRACTS = [
   {
     name: "DBB Contract 1",
+    // Ensure DBB_CONTRACT_1 is set in your .env
     address: process.env.DBB_CONTRACT_1 || "0x79dc6c81e72d0000ADbDD418c3FD9972a11aCB84",
   },
   {
     name: "DBB Contract 2",
+    // Ensure DBB_CONTRACT_2 is set in your .env
     address: process.env.DBB_CONTRACT_2 || "0xb1ef32e8b63b7f9b06bd6e8c0198c4edcc0a14f3",
   },
 ];
-
 
 export const NETWORKS = {
   ethereum: {
@@ -39,7 +40,6 @@ export const NETWORKS = {
   },
 };
 
-
 export const EXCLUSION_KEYWORDS = [
   "whitelist",
   "allowlist",
@@ -54,4 +54,8 @@ export const EXCLUSION_KEYWORDS = [
 ];
 
 
-export const USER_WALLET = process.env.USER_WALLET_ADDRESS;
+const allowedWalletsString = process.env.USER_WALLET_ADDRESSES || "";
+export const ALLOWED_WALLETS = allowedWalletsString
+  .split(",")
+  .map((address) => address.trim().toLowerCase())
+  .filter((address) => address.length > 0);

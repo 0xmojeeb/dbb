@@ -1,11 +1,11 @@
 import { ethers } from "ethers";
 import chalk from "chalk";
 
-import { DBB_CONTRACTS, NETWORKS, USER_WALLET } from "./api/constants.js";
+
+import { DBB_CONTRACTS, NETWORKS, ALLOWED_WALLETS } from "./api/constants.js";
 import { ERC721_BALANCE_ABI } from "./api/abiFragments.js";
 
 /**
- * 
  * @param {string} walletAddress 
  * @returns {Object} 
  */
@@ -19,11 +19,24 @@ export async function checkTokenGate(walletAddress) {
     };
   }
 
-  if (!NETWORKS.ethereum.alchemyApiKey) {
+  
+  const normalizedAddress = walletAddress.toLowerCase();
+  if (ALLOWED_WALLETS.includes(normalizedAddress)) {
+    console.log(chalk.green(`\n✅ Wallet ${walletAddress} is on the whitelist. Access granted.`));
+    return {
+        granted: true,
+        holdings: [],
+        totalBalance: 999, 
+        message: "🎉 ACCESS GRANTED — Welcome to DBB, VIP!",
+    };
+  }
+
+  
+  if (!NETWORKS.base.alchemyApiKey) {
     return {
       granted: false,
       holdings: [],
-      message: "❌ Missing ALCHEMY_ETH_API_KEY in .env file.",
+      message: "❌ Missing ALCHEMY_BASE_API_KEY in .env file.",
     };
   }
 
@@ -33,41 +46,32 @@ export async function checkTokenGate(walletAddress) {
   const holdings = [];
   let totalBalance = 0;
 
-  console.log(chalk.cyan("\n🔐 DBB Token Gate — Checking Access...\n"));
+  console.log(chalk.cyan("\n🔐 DBB Token Gate — Checking On-Chain Holdings...\n"));
   console.log(chalk.gray(`   Wallet: ${walletAddress}`));
   console.log(chalk.gray(`   Network: Base Mainnet\n`));
-
   
   for (const contractInfo of DBB_CONTRACTS) {
     try {
       console.log(chalk.yellow(`   Checking ${contractInfo.name}...`));
-      console.log(chalk.gray(`   Contract: ${contractInfo.address}`));
-
+      
       const contract = new ethers.Contract(
         contractInfo.address,
         ERC721_BALANCE_ABI,
         provider
       );
 
-      
       const balance = await contract.balanceOf(walletAddress);
       const balanceNum = Number(balance);
 
-      
       let collectionName = contractInfo.name;
       try {
         collectionName = await contract.name();
-      } catch {
-        
-      }
+      } catch {}
 
-      
       let symbol = "???";
       try {
         symbol = await contract.symbol();
-      } catch {
-       
-      }
+      } catch {}
 
       holdings.push({
         contract: contractInfo.address,
@@ -99,7 +103,6 @@ export async function checkTokenGate(walletAddress) {
     }
   }
 
-  
   const granted = totalBalance > 0;
 
   const result = {
@@ -120,12 +123,7 @@ export async function checkTokenGate(walletAddress) {
     console.log(chalk.yellow("   Get your DBB NFT:"));
     console.log(
       chalk.gray(
-        `   • Contract 1: ${NETWORKS.ethereum.explorerUrl}${DBB_CONTRACTS[0].address}`
-      )
-    );
-    console.log(
-      chalk.gray(
-        `   • Contract 2: ${NETWORKS.ethereum.explorerUrl}${DBB_CONTRACTS[1].address}\n`
+        `   • Contract: ${NETWORKS.base.explorerUrl}${DBB_CONTRACTS[0].address}`
       )
     );
   }
@@ -135,17 +133,16 @@ export async function checkTokenGate(walletAddress) {
 }
 
 
-if (process.argv[1].includes("tokenGate")) {
-  const wallet = process.argv[2] || USER_WALLET;
-
-  if (!wallet) {
-    console.log(chalk.red("\n❌ Please provide a wallet address:"));
-    console.log(chalk.gray("   node src/tokenGate.js 0xYourWalletAddress"));
-    console.log(chalk.gray("   OR set USER_WALLET_ADDRESS in .env\n"));
-    process.exit(1);
-  }
-
-  checkTokenGate(wallet).then((result) => {
-    process.exit(result.granted ? 0 : 1);
-  });
+if (process.argv[1] && process.argv[1].endsWith("tokenGate.js")) {
+    const wallet = process.argv[2];
+  
+    if (!wallet) {
+      console.log(chalk.red("\n❌ Please provide a wallet address:"));
+      console.log(chalk.gray("   node src/tokenGate.js 0xYourWalletAddress\n"));
+      process.exit(1);
+    }
+  
+    checkTokenGate(wallet).then((result) => {
+      process.exit(result.granted ? 0 : 1);
+    });
 }
