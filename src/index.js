@@ -4,25 +4,22 @@ import { scrapeFreeMints } from "./api/freeMintScraper.js";
 import { ALLOWED_WALLETS } from "./api/constants.js";
 
 async function main() {
-  
+ 
   console.log(
     chalk.bold.magenta(
       "\n╔══════════════════════════════════════════════════════════╗\n" +
-      "║          🩸 DEGENBYBLOOD (DBB) PLATFORM 🩸          ║\n" +
-      "║          Token Gate + Free Mint Scraper v1.0         ║\n" +
+      "║            🩸 DEGENBYBLOOD (DBB) PLATFORM 🩸            ║\n" +
+      "║            Token Gate + Free Mint Scraper v1.0         ║\n" +
       "╚══════════════════════════════════════════════════════════╝\n"
     )
   );
 
   
-  const walletAddress = process.argv[2] || ALLOWED_WALLETS[0];
+  const walletAddress = ALLOWED_WALLETS[0];
 
   if (!walletAddress) {
-    console.log(chalk.red("❌ No wallet address provided and no default available!\n"));
-    console.log(chalk.white("Usage:"));
-    console.log(chalk.gray("  node src/index.js 0xYourWalletAddress"));
-    console.log(chalk.gray("  OR set USER_WALLET_ADDRESSES in your .env file\n"));
-    process.exit(1);
+    console.log(chalk.red("❌ No default wallet address available!\n"));
+    return; 
   }
 
   console.log(chalk.bold.cyan("━━━ TASK 1: TOKEN GATE ━━━"));
@@ -33,12 +30,13 @@ async function main() {
     console.log(
       chalk.red("\n🛑 Cannot proceed to Food Item Scraper without access.\n")
     );
-    process.exit(1);
+    return; 
   }
 
   console.log(chalk.bold.cyan("\n━━━ TASK 2: FOOD ITEM SCRAPER ━━━"));
 
-  const blockRange = parseInt(process.argv[3]) || 9;
+  
+  const blockRange = 9;
 
   console.log(
     chalk.green(
@@ -48,6 +46,7 @@ async function main() {
 
   const freeMints = await scrapeFreeMints(blockRange);
 
+  
   
   console.log(chalk.bold.magenta("\n" + "═".repeat(60)));
   console.log(chalk.bold.magenta("   📊 SESSION SUMMARY"));
@@ -64,5 +63,4 @@ async function main() {
 main().catch((error) => {
   console.error(chalk.red(`\n💀 Fatal error: ${error.message}\n`));
   console.error(chalk.gray(error.stack));
-  process.exit(1);
 });
