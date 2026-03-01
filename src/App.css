@@ -1,0 +1,86 @@
+.container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  text-align: center;
+}
+
+header {
+  margin-bottom: 40px;
+}
+
+.nft-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.nft-card {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 20px;
+  background-color: #fff;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+.nft-card:hover {
+  transform: translateY(-5px);
+}
+
+.symbol {
+  color: #666;
+  font-style: italic;
+}
+
+.details {
+  text-align: left;
+  margin: 15px 0;
+  font-size: 0.9em;
+}
+
+.func {
+  font-family: monospace;
+  background: #eee;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.btn {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.btn:hover {
+  background-color: #0056b3;
+}
+
+.error {
+  color: red;
+  font-weight: bold;
+}
+
+.connect-btn {
+  background-color: #28a745;
+  margin-bottom: 20px;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mint-btn {
+  background-color: #dc3545;
+}
+
+.secondary {
+  background-color: #6c757d;
+}
