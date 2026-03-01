@@ -84,7 +84,7 @@ function App() {
   return (
     <div className="container">
       <header>
-        <h1>🍔 DBB Live Free Mint Scanner</h1>
+        <h1>🍔 DegenbyBlood | Live Free Mint Scanner</h1>
         <button onClick={connectWallet} className="btn connect-btn">
           {walletAddress ? `Connected: ${walletAddress.slice(0,6)}...` : 'Connect Wallet'}
         </button>
@@ -122,3 +122,4 @@ function App() {
 }
 
 export default App;
+
