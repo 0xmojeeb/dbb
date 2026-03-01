@@ -1,63 +1,45 @@
 import { ethers } from "ethers";
-import { Alchemy, Network } from "alchemy-sdk";
-
-
 import {
   NETWORKS,
   EXCLUSION_KEYWORDS,
 } from "./constants.js";
 import {
-  MINT_SELECTORS,
-  EXCLUSION_SELECTORS,
   INSPECTION_ABI,
   COMMON_MINT_ABIS,
+  MINT_SELECTORS,
+  EXCLUSION_SELECTORS,
 } from "./abiFragments.js";
-
-
-const ALCHEMY_NETWORK_MAP = {
-  ethereum: Network.ETH_MAINNET,
-  base: Network.BASE_MAINNET,
-  arbitrum: Network.ARB_MAINNET,
-};
 
 
 const ERC721_INTERFACE = "0x80ac58cd";
 const ERC1155_INTERFACE = "0xd9b67a26";
 
-function getAlchemy(networkKey) {
-  const net = NETWORKS[networkKey];
-  if (!net.alchemyApiKey) {
-    throw new Error(`Missing Alchemy API key for ${net.name}.`);
-  }
-  return new Alchemy({
-    apiKey: net.alchemyApiKey,
-    network: ALCHEMY_NETWORK_MAP[networkKey],
-  });
-}
 
 
 function getProvider(networkKey) {
   const net = NETWORKS[networkKey];
+  if (!net.rpcUrl) {
+    throw new Error(`Missing RPC URL for ${net.name}.`);
+  }
   return new ethers.JsonRpcProvider(net.rpcUrl);
 }
 
-
 async function isNFTContract(contractAddress, provider) {
+  
+  const iface = new ethers.Interface(["function supportsInterface(bytes4) view returns (bool)"]);
+  const contract = new ethers.Contract(contractAddress, iface, provider);
+
+  try {
+    const supports721 = await contract.supportsInterface(ERC721_INTERFACE);
+    if (supports721) return true;
+
+    const supports1155 = await contract.supportsInterface(ERC1155_INTERFACE);
+    if (supports1155) return true;
+  } catch (e) {
     
-    const abi = ["function supportsInterface(bytes4) view returns (bool)"];
-    const contract = new ethers.Contract(contractAddress, abi, provider);
-
-    try {
-        const supports721 = await contract.supportsInterface(ERC721_INTERFACE);
-        if (supports721) return true;
-
-        const supports1155 = await contract.supportsInterface(ERC1155_INTERFACE);
-        if (supports1155) return true;
-
-    } catch (e) {
-        return false;
-    }
     return false;
+  }
+  return false;
 }
 
 async function findRecentNFTContracts(networkKey, blockRange = 500) {
@@ -82,12 +64,12 @@ async function findRecentNFTContracts(networkKey, blockRange = 500) {
     const uniqueContracts = [...new Set(logs.map((log) => log.address))];
 
     
-    const contractsToCheck = uniqueContracts.slice(0, 50);
+    const contractsToCheck = uniqueContracts.slice(0, 30);
 
     for (const contractAddress of contractsToCheck) {
       try {
         const isNft = await isNFTContract(contractAddress, provider);
-        if (!isNft) continue; 
+        if (!isNft) continue;
 
         const result = await analyzeContract(
           contractAddress,
@@ -107,7 +89,6 @@ async function findRecentNFTContracts(networkKey, blockRange = 500) {
 
   return contracts;
 }
-
 
 async function analyzeContract(contractAddress, provider, networkKey) {
   const contract = new ethers.Contract(
@@ -139,7 +120,7 @@ async function analyzeContract(contractAddress, provider, networkKey) {
   } catch {}
 
   let priceFound = false;
-  const priceFunctions = ["mintPrice", "price", "cost", "PRICE"];
+  const priceFunctions = ["mintPrice", "price", "cost", "PRICE", "getPrice"];
 
   for (const fn of priceFunctions) {
     try {
@@ -148,7 +129,7 @@ async function analyzeContract(contractAddress, provider, networkKey) {
       priceFound = true;
 
       if (price > 0n) {
-        return null; 
+        return null;
       }
       break;
     } catch {
@@ -159,7 +140,7 @@ async function analyzeContract(contractAddress, provider, networkKey) {
   try {
     analysis.isPaused = await contract.paused();
     if (analysis.isPaused) {
-      return null; 
+      return null;
     }
   } catch {}
 
@@ -167,6 +148,7 @@ async function analyzeContract(contractAddress, provider, networkKey) {
     "saleIsActive",
     "isPublicSaleActive",
     "publicSaleActive",
+    "isActive",
   ];
 
   for (const fn of publicSaleFunctions) {
@@ -181,31 +163,31 @@ async function analyzeContract(contractAddress, provider, networkKey) {
 
   try {
     const merkleRoot = await contract.merkleRoot();
-    
+
     if (
       merkleRoot &&
       merkleRoot !==
         "0x0000000000000000000000000000000000000000000000000000000000000000"
     ) {
       analysis.hasMerkle = true;
-      return null; 
+      return null;
     }
   } catch {}
 
   const bytecode = await provider.getCode(contractAddress);
 
   if (bytecode === "0x") {
-    return null; 
+    return null;
   }
 
   for (const [selector, name] of Object.entries(EXCLUSION_SELECTORS)) {
-    const selectorClean = selector.slice(2); 
+    const selectorClean = selector.slice(2);
     if (bytecode.toLowerCase().includes(selectorClean)) {
       const nameLC = name.toLowerCase();
       if (
         EXCLUSION_KEYWORDS.some((keyword) => nameLC.includes(keyword))
       ) {
-        return null; 
+        return null;
       }
     }
   }
@@ -214,7 +196,7 @@ async function analyzeContract(contractAddress, provider, networkKey) {
   for (const keyword of EXCLUSION_KEYWORDS) {
     const hexKeyword = Buffer.from(keyword).toString("hex");
     if (bytecodeLC.includes(hexKeyword)) {
-      return null; 
+      return null;
     }
   }
 
@@ -244,13 +226,13 @@ async function analyzeContract(contractAddress, provider, networkKey) {
   return analysis;
 }
 
-
 export async function scrapeFreeMints(blockRange = 500) {
   const allResults = [];
   const networksToScan = ["ethereum", "base", "arbitrum"];
 
   for (const networkKey of networksToScan) {
-    if (!NETWORKS[networkKey].alchemyApiKey) {
+    if (!NETWORKS[networkKey].rpcUrl) {
+      console.warn(`Skipping ${networkKey}: Missing RPC URL.`);
       continue;
     }
 
@@ -262,14 +244,17 @@ export async function scrapeFreeMints(blockRange = 500) {
     }
   }
 
-  
   return allResults;
 }
 
 
-if (typeof process !== 'undefined' && process.argv && process.argv[1].includes("freeMintScraper")) {
+if (
+  typeof process !== "undefined" &&
+  process.argv &&
+  process.argv[1].includes("freeMintScraper")
+) {
   const blockRange = parseInt(process.argv[2]) || 500;
-  scrapeFreeMints(blockRange).then(results => {
-      console.log(JSON.stringify(results, null, 2));
+  scrapeFreeMints(blockRange).then((results) => {
+    console.log(JSON.stringify(results, null, 2));
   });
 }
